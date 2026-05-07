@@ -1,0 +1,15 @@
+name = "forum"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = ".next"
+
+[vars]
+JWT_SECRET = "xK9#mP2$vL8@nQ5!wR3&jT6^yU1*oH4"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "forum-db"
+database_id = "487b16be-d5b1-4509-a07a-52f8940d9a80"
+
+[[r2_buckets]]
+binding = "AVATARS"
+bucket_name = "forum-avatars"

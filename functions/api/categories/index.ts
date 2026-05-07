@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 export const onRequestGet = async ({ env }: any) => {
   const cats = await env.DB.prepare(`
     SELECT c.*,

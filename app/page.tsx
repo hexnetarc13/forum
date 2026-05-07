@@ -1,6 +1,7 @@
 export const runtime = 'edge';
 
 'use client';
+export const runtime = 'edge';
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import { C } from '@/lib/styles';

@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 import { verifyToken, getTokenFromRequest } from '../../../lib/auth';
 
 export const onRequestGet = async ({ env }: any) => {

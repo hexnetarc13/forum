@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { verifyToken, getTokenFromRequest } from '../../../lib/auth';
 
 async function requireAdmin(request: Request, env: any) {

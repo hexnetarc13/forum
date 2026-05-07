@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import bcrypt from 'bcryptjs';
 import { signToken } from '../../../lib/auth';
 

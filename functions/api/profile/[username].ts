@@ -1,3 +1,4 @@
+export const runtime = 'edge';
 export const onRequestGet = async ({ params, env }: any) => {
   const { username } = params;
   const user = await env.DB.prepare(

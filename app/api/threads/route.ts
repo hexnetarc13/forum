@@ -2,16 +2,22 @@ export const runtime = 'edge';
 
 export async function POST(request: Request) {
   try {
-    const { title, content, category_id } = await request.json();
+    const body = await request.json();
+    const { title, content, category_id, username } = body;
     const db = (process.env as any).DB;
-    
-    // Replace this with your actual user logic later
-    const username = "Admin"; 
-    const id = crypto.randomUUID();
 
+    // 1. Validation
+    if (!title || !content || !category_id) {
+      return Response.json({ error: 'Missing title, content, or category' }, { status: 400 });
+    }
+
+    const id = crypto.randomUUID();
+    
+    // 2. Insert with the username passed from the frontend
+    // We default to 0 for is_pinned so new posts aren't accidentally pinned
     await db.prepare(
-      'INSERT INTO threads (id, title, content, category_id, username) VALUES (?, ?, ?, ?, ?)'
-    ).bind(id, title, content, category_id, username).run();
+      'INSERT INTO threads (id, title, content, category_id, username, is_pinned) VALUES (?, ?, ?, ?, ?, 0)'
+    ).bind(id, title, content, category_id, username || "Anonymous").run();
 
     return Response.json({ success: true, id });
   } catch (err: any) {
@@ -19,9 +25,18 @@ export async function POST(request: Request) {
   }
 }
 
-// Add a GET method so the home page can actually see the threads
 export async function GET() {
-  const db = (process.env as any).DB;
-  const { results } = await db.prepare('SELECT * FROM threads ORDER BY created_at DESC').all();
-  return Response.json(results);
+  try {
+    const db = (process.env as any).DB;
+    
+    // This SQL query ensures pinned threads stay at the top (1 > 0)
+    // Then it sorts the rest by the newest date
+    const { results } = await db.prepare(
+      'SELECT * FROM threads ORDER BY is_pinned DESC, created_at DESC'
+    ).all();
+    
+    return Response.json(results);
+  } catch (err: any) {
+    return Response.json({ error: err.message }, { status: 500 });
+  }
 }

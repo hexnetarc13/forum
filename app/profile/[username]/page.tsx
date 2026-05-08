@@ -1,86 +1,79 @@
 'use client';
 export const runtime = 'edge';
-
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import Header from '@/components/Header';
-import { getRank, getRankColor } from '@/lib/ranks';
-import { C } from '@/lib/styles';
+import { C, S } from '@/lib/styles';
 
-export default function ProfilePage() {
-  const { username } = useParams();
-  const [profile, setProfile] = useState<any>(null);
-  const [threads, setThreads] = useState<any[]>([]);
+export default function Profile({ params }: { params: { username: string } }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`/api/profile/${username}`)
-      .then(r => r.json())
-      .then(d => { setProfile(d.user); setThreads(d.threads || []); })
-      .catch(() => {});
-  }, [username]);
+    // Add a timestamp to kill the cache
+    fetch(`/api/users/${params.username}?t=${Date.now()}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'User not found');
+        }
+        return res.json();
+      })
+      .then((json) => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [params.username]);
 
-  if (!profile) return (
-    <div style={{ background: C.bg, minHeight: '100vh' }}>
-      <Header />
-      <div style={{ padding: '40px', textAlign: 'center', color: C.muted }}>loading...</div>
+  if (loading) return (
+    <div style={{ background: C.bg, minHeight: '100vh', color: '#fff' }}>
+      <Header /><div style={{ padding: '40px', textAlign: 'center' }}>Loading profile...</div>
     </div>
   );
 
-  const rank = getRank(profile.post_count || 0);
-  const rankColor = getRankColor(profile.post_count || 0);
+  if (error) return (
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.red }}>
+      <Header /><div style={{ padding: '40px', textAlign: 'center' }}>Error: {error}</div>
+    </div>
+  );
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh' }}>
       <Header />
-      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '16px 12px' }}>
-
-        {/* Profile card */}
-        <div style={{ background: C.panel, border: `1px solid ${C.border}`, marginBottom: '12px' }}>
-          <div style={{
-            background: '#1a1a20', borderBottom: `1px solid ${C.border}`,
-            padding: '6px 10px', fontFamily: 'Impact, Arial Black, sans-serif',
-            fontSize: '12px', letterSpacing: '1px', color: C.white, textTransform: 'uppercase',
-          }}>User Profile</div>
-          <div style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-            <div style={{
-              width: '64px', height: '64px', border: `1px solid ${C.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#1a1a20', fontSize: '24px', flexShrink: 0,
-            }}>
-              {profile.avatar_url ? <img src={profile.avatar_url} width={64} height={64} alt="" style={{ objectFit: 'cover' }} /> : '👤'}
-            </div>
-            <div>
-              <div style={{ color: C.white, fontWeight: 'bold', fontSize: '16px' }}>{profile.username}</div>
-              <div style={{ color: rankColor, fontSize: '12px', margin: '3px 0' }}>{rank}</div>
-              <div style={{ color: C.muted, fontSize: '11px' }}>Posts: {profile.post_count || 0}</div>
-              <div style={{ color: C.muted, fontSize: '11px' }}>Joined: {new Date(profile.created_at).toLocaleDateString()}</div>
-              <div style={{ color: C.muted, fontSize: '11px' }}>Rep: {profile.rep_score || 0}</div>
-            </div>
-          </div>
+      <div style={{ maxWidth: '900px', margin: '20px auto', display: 'flex', gap: '20px', padding: '0 15px' }}>
+        {/* Left Sidebar */}
+        <div style={{ width: '250px', background: C.panel, padding: '20px', border: `1px solid ${C.border}` }}>
+          <img 
+            src={data.user.avatar_url || 'https://via.placeholder.com/150'} 
+            style={{ width: '100%', borderRadius: '4px', border: `1px solid ${C.border}` }} 
+          />
+          <h2 style={{ marginTop: '15px', color: '#fff', textTransform: 'uppercase', fontFamily: 'Impact' }}>
+            {data.user.username}
+          </h2>
+          <div style={{ fontSize: '11px', color: C.muted, marginBottom: '10px' }}>Joined: {new Date(data.user.created_at).toLocaleDateString()}</div>
+          <p style={{ color: '#ccc', fontSize: '13px', lineHeight: '1.4' }}>{data.user.bio || 'This user has no bio.'}</p>
         </div>
 
-        {/* Recent threads */}
-        <div style={{ border: `1px solid ${C.border}` }}>
-          <div style={{
-            background: '#1a1a20', borderBottom: `1px solid ${C.border}`,
-            padding: '6px 10px', fontFamily: 'Impact, Arial Black, sans-serif',
-            fontSize: '12px', letterSpacing: '1px', color: C.white, textTransform: 'uppercase',
-          }}>Recent Threads</div>
-          {threads.length === 0
-            ? <div style={{ padding: '20px', textAlign: 'center', color: C.muted }}>No threads yet.</div>
-            : threads.map((t: any, i: number) => (
-              <div key={t.id} style={{
-                padding: '8px 10px', borderBottom: `1px solid ${C.border}`,
-                background: i % 2 === 0 ? C.panel : '#0f0f12',
-              }}>
-                <a href={`/thread/${t.id}`} style={{ color: C.white, fontWeight: 'bold' }}>{t.title}</a>
-                <span style={{ color: C.muted, fontSize: '11px', marginLeft: '8px' }}>
-                  {new Date(t.created_at).toLocaleDateString()}
-                </span>
+        {/* Right Side: Threads */}
+        <div style={{ flex: 1, background: C.panel, border: `1px solid ${C.border}` }}>
+          <div style={S.sectionHead}>Recent Posts by {data.user.username}</div>
+          {data.posts.length === 0 ? (
+            <div style={{ padding: '20px', color: C.muted }}>No posts found.</div>
+          ) : (
+            data.posts.map((post: any) => (
+              <div key={post.id} style={{ padding: '15px', borderBottom: `1px solid ${C.border}` }}>
+                <a href={`/thread/${post.id}`} style={{ fontWeight: 'bold', color: C.text, fontSize: '14px' }}>{post.title}</a>
+                <div style={{ fontSize: '11px', color: C.muted, marginTop: '4px' }}>
+                  {new Date(post.created_at).toLocaleDateString()}
+                </div>
               </div>
-            ))}
+            ))
+          )}
         </div>
-
       </div>
     </div>
   );

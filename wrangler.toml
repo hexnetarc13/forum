@@ -2,6 +2,9 @@ name = "forum"
 compatibility_date = "2026-01-01"
 pages_build_output_dir = ".vercel/output/static"
 
+[build]
+command = "npx @cloudflare/next-on-pages@1"
+
 [vars]
 JWT_SECRET = "xK9#mP2$vL8@nQ5!wR3&jT6^yU1*oH4"
 
